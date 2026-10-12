@@ -7,9 +7,9 @@ const footer = s => `<footer class="slide-footer"><span>${s.block}</span><span>$
 const AR = {rhino:'16/10'}; // пропорции роликов, остальные 16:9
 const playIcon = '<svg viewBox="0 0 24 24"><path d="m9 5 11 7-11 7z"/></svg>';
 // Тема живого фона для каждого типа слайда
-const THEME = {cover:'dark', chapter:'dark', statement:'dark', video:'video'};
+const THEME = {cover:'dark', chapter:'dark', statement:'dark', video:'video', omni:'video'};
 const themeOf = s => THEME[s.type] || 'light';
-const REVEAL = '.cover-inner>*,.chapter-inner>*,.statement-inner>*,.video-heading,.video-frame,.embed-wrap,.speakers-map>:not(.sp-arrows),.solo-text>*,.solo-list>li,.solo-photo,.ind-text>*,.ind-bento>*,.ind-probes>*,.ind-arrow,.ind-final,.ind-quote,.mini-qr,.poll-layout>div>*,.poll-options>button,.task-grid>div,.center-title,.bottom-thought,.qr-layout>div>*,.qr-card,.web-intro>*,.closing-layout>h2,.closing-steps>div,.placeholder-layout>div>*,.placeholder-canvas';
+const REVEAL = '.omni-row>*,.omni-brief,.cover-inner>*,.chapter-inner>*,.statement-inner>*,.video-heading,.video-frame,.embed-wrap,.speakers-map>:not(.sp-arrows),.solo-text>*,.solo-list>li,.solo-photo,.ind-text>*,.ind-bento>*,.ind-probes>*,.ind-arrow,.ind-final,.ind-quote,.mini-qr,.poll-layout>div>*,.poll-options>button,.task-grid>div,.center-title,.bottom-thought,.qr-layout>div>*,.qr-card,.web-intro>*,.closing-layout>h2,.closing-steps>div,.placeholder-layout>div>*,.placeholder-canvas';
 const TILT = '.task-grid>div,.solo-photo,.qr-card,.sp-photo,.ind-bento>*,.ind-final,.closing-steps>div,.placeholder-canvas';
 function slideContent(s) {
   if (s.html) return s.html;
@@ -21,7 +21,7 @@ function slideContent(s) {
 }
 SLIDES.forEach((s,i) => {
   const el = document.createElement('section');
-  el.className = `slide ${s.type} t-${themeOf(s)==='light'?'light':'dark'}${s.type==='video'?' video-slide':''}${s.type==='embed'?' embed-slide':''}${s.type==='web'?' web-slide':''}`;
+  el.className = `slide ${s.type} t-${themeOf(s)==='light'?'light':'dark'}${s.type==='omni'?' video-slide':''}${s.type==='video'?' video-slide':''}${s.type==='embed'?' embed-slide':''}${s.type==='web'?' web-slide':''}`;
   el.dataset.index=i;
   el.setAttribute('aria-label',`${i+1}. ${s.title.replace(/<br>/g,' ')}`);
   el.setAttribute('aria-hidden','true');
@@ -39,7 +39,7 @@ Field.mount(deck);
 const progress=document.createElement('div');progress.className='progress';document.querySelector('.toolbar').append(progress);
 function videoSource(id) {return 'assets/videos/'+id+'.mp4';}
 function ensureVideo(el) {
-  const v=el.querySelector('video');
+  const v=el.querySelector('[data-media] video');
   if (!v||v.dataset.loaded) return;
   v.dataset.loaded='true';
   v.parentElement.classList.remove('has-error');
@@ -76,13 +76,15 @@ function fitVideo(){
 addEventListener('resize',fitVideo);document.fonts.ready.then(fitVideo);
 function show(index, updateHash=true) {
   const next=Math.max(0,Math.min(SLIDES.length-1,index));
-  const previousVideo=sections[current]?.querySelector('video');
+  const previousVideo=sections[current]?.querySelector('[data-media] video');
   previousVideo?.pause();
   if(next!==current&&previousVideo){previousVideo.removeAttribute('src');previousVideo.load();delete previousVideo.dataset.loaded;}
   if(next!==current){const wrap=sections[current]?.querySelector('.embed-wrap');if(wrap?.querySelector('iframe'))wrap.innerHTML=wrap.dataset.initialContent;}
   sections.forEach((el,i)=>{el.classList.toggle('active',i===next);el.setAttribute('aria-hidden',i===next?'false':'true');el.inert=i!==next;});
   if(next!==current&&current>=0)Field.pulse(undefined,undefined,4);
+  sections[current]?.querySelectorAll('video[data-loop]').forEach(v=>v.pause());
   current=next;
+  sections[current].querySelectorAll('video[data-loop]').forEach(v=>v.play().catch(()=>{})); // короткие тесты крутятся сами, без звука
   Field.pause(false);
   Field.mode(themeOf(SLIDES[current]),current);
   sections[current].querySelectorAll('[data-scramble]').forEach(scramble);
